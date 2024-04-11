@@ -1,20 +1,36 @@
+import 'package:bolg_app/core/constants/constants.dart';
 import 'package:bolg_app/core/error/exception.dart';
 import 'package:bolg_app/core/error/failures.dart';
+import 'package:bolg_app/core/network/connection_checker.dart';
 import 'package:bolg_app/features/auth/data/datasources/auth_remote_data_source.dart';
 import 'package:bolg_app/core/common/entities/user.dart';
 import 'package:bolg_app/features/auth/domain/repository/auth_repository.dart';
 import 'package:fpdart/fpdart.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' as sb;
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
-  AuthRepositoryImpl({required this.remoteDataSource});
+  final ConnectionChecker connectionChecker;
+  AuthRepositoryImpl({
+    required this.remoteDataSource,
+    required this.connectionChecker,
+  });
 
-@override
-  Future<Either<Failure, User>> currentUser() async{
+  @override
+  Future<Either<Failure, User>> currentUser() async {
     try {
+      if (!await (connectionChecker.isConnected)) {
+        final session = remoteDataSource.currentUserSession;
+        if (session == null) {
+          return left(Failure('User Not Logged In'));
+        }
+        return right(User(
+          id: session.user.id,
+          email: session.user.email ?? '',
+          name: '',
+        ));
+      }
       final user = await remoteDataSource.getCurrentUserData();
-      if(user!=null){
+      if (user != null) {
         return right(user);
       }
       return left(Failure('User Not Logged In'));
@@ -55,13 +71,13 @@ class AuthRepositoryImpl implements AuthRepository {
     Future<User> Function() fn,
   ) async {
     try {
+      if (!await (connectionChecker.isConnected)) {
+        return left(Failure(Constants.noConnectionErrorMessage));
+      }
       final user = await fn();
       return right(user);
-    } on sb.AuthException catch (e) {
-      return left(Failure(e.message));
-    } on ServerException catch (e) {
+    }on ServerException catch (e) {
       return left(Failure(e.message));
     }
   }
-  
 }

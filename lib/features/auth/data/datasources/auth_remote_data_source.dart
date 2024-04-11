@@ -42,7 +42,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: currentUserSession!.user.email,
       );
     } on AuthException catch (e) {
-      throw AuthException(e.message);
+      throw ServerException(e.message);
     } catch (e) {
       throw ServerException(e.toString());
     }
@@ -69,7 +69,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: currentUserSession!.user.email,
       );
     } on AuthException catch (e) {
-      throw AuthException(e.message);
+      throw ServerException(e.message);
     } catch (e) {
       throw ServerException(e.toString());
     }
